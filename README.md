@@ -20,7 +20,7 @@ The initial pattern constitutes the seed of the system. The first generation is 
 ## Field with random fill example
 
 <p align="center">
-  <img width="300" height="300" src="pics/gol2.png">
+  <img width="400" height="400" src="pics/gol2.png">
 </p>
 
 ## Program features
@@ -35,5 +35,5 @@ The initial pattern constitutes the seed of the system. The first generation is 
 * Ability to draw your own map!
 
 <p align="center">
-  <img width="300" height="300" src="pics/gol1.png">
+  <img width="400" height="400" src="pics/gol1.png">
 </p>
