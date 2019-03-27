@@ -1,4 +1,4 @@
-# Game-of-Life
+# Game of Life
 
 *from Wikipedia*
 
@@ -19,7 +19,9 @@ The initial pattern constitutes the seed of the system. The first generation is 
 
 ## Field with random fill example
 
-![Field with random fill](pics/gol2.png)
+<p align="center">
+  <img width="300" height="300" src="pics/gol2.png">
+</p>
 
 ## Program features
 
@@ -32,4 +34,6 @@ The initial pattern constitutes the seed of the system. The first generation is 
 * Ability to save/open map
 * Ability to draw your own map!
 
-![Smile](pics/gol1.png)
+<p align="center">
+  <img width="300" height="300" src="pics/gol1.png">
+</p>
