@@ -5,7 +5,7 @@ unit Unit1;
 interface
 
 uses
-  Forms, Graphics, ExtCtrls, Messages, Classes, SysUtils, Controls, StdCtrls, Dialogs;
+  Forms, Graphics, ExtCtrls, Messages, Classes, SysUtils, Controls, StdCtrls, Dialogs, Strutils;
 
 type
 
@@ -172,7 +172,7 @@ begin
   isPlaying := false;
   isDrawing := false;
   isBordered := true;
-  Timer.Enabled := isPlaying;
+  Timer.Enabled := false;
   DrawBuffer := TBitMap.Create;
   Randomize;
   config.B := '3';
@@ -232,86 +232,63 @@ begin
 end;
 
 procedure TLifeForm.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+const DIVIDER = 32;
   procedure SaveMap;
   var
-    i, j, currentValue, currentTimes: longint;
+    i, j, k, steps, trunk: longint;
+    currentBinary: string;
   begin
     if SaveDialog.Execute then begin
       System.Assign(map, SaveDialog.FileName);
       System.Rewrite(map);
-      writeln(map, LifeForm.Width, ',', LifeForm.Height, ',', size);
-      for i := 0 to fy - 1 do begin
-        currentValue := f[i, 0];
-        currentTimes := 1;
-        for j := 1 to fx - 1 do begin
-          if f[i, j] <> currentValue then begin
-            if currentValue = 1 then
-              write(map, '!', IntToStr(currentTimes))
-            else
-              write(map, IntToStr(currentTimes));
-            if j < fx then write(map, ',');
-            currentTimes := 1;
-            currentValue := f[i, j];
-          end else currentTimes := currentTimes + 1;
-          if j = fx - 1 then begin
-            if currentValue = 1 then
-              write(map, '!', IntToStr(currentTimes))
-            else
-              write(map, IntToStr(currentTimes));
+      steps := length(f) div DIVIDER;
+      trunk := length(f) mod DIVIDER;
+      write(map, LifeForm.Width, ',', LifeForm.Height, ',', size, ';');
+      for i := 0 to (length(f[0]) - 1) do begin
+        for j := 1 to steps do begin
+          currentBinary := '0';
+          for k := (j - 1) * DIVIDER to j * DIVIDER - 1 do begin
+            currentBinary := currentBinary + IntToStr(f[i, k]);
           end;
+          write(map, Numb2Dec(currentBinary, 2), ',');
         end;
-        write(map, ';');
+        currentBinary := '0';
+        for j := steps * DIVIDER to steps * DIVIDER + trunk - 1 do begin
+          currentBinary := currentBinary + IntToStr(f[i, j]);
+        end;
+        write(map, Numb2Dec(currentBinary, 2), ';');
       end;
       System.Close(map);
     end;
   end;
   procedure OpenMap;
   var
-    i, j, k, position, w, h: longint;
-    temp, str: string;
-    params: array[0..2] of longint;
+    i, j, k: longint;
+    str, value: string;
+    mapLines, params: TStringArray;
   begin
     if OpenDialog.Execute then begin
       System.Assign(map, OpenDialog.FileName);
       System.Reset(map);
-      position := 0;
-      readln(map, str);
-      for i := 1 to length(params) do begin
-        str := str[position + 1..length(str)];
-        position := pos(',', str);
-        if position = 0 then position := length(str) + 1;
-        params[i - 1] := StrToInt(str[1..position - 1]);
-      end;
-      w := params[0];
-      h := params[1];
-      size := params[2];
-      LifeForm.Width := w;
-      LifeForm.Height := h;
-      updateField;
-      position := 0;
-      k := 0;
       readln(map, str);
       System.Close(map);
-      temp := '';
-      for i := 1 to length(str) do begin
-        if (str[i] = ',') or (str[i] = ';') then begin
-          if temp[1] = '!' then begin
-            for j := 0 to StrToInt(temp[2..length(temp)]) - 1 do
-              f[k, position + j] := 1;
-            position := position + StrToInt(temp[2..length(temp)]);
-          end else begin
-            for j := 0 to StrToInt(temp) - 1 do
-              f[k, position + j] := 0;
-            position := position + StrToInt(temp);
-          end;
-          temp := '';
-          if str[i] = ';' then begin
-            k := k + 1;
-            position := 0;
-          end;
-          continue;
+      mapLines := str.Split(';');
+      for i := 0 to length(mapLines) - 1 do begin
+        params := mapLines[i].Split(',');
+        if i = 0 then begin
+           LifeForm.Width := StrToInt(params[0]);
+           LifeForm.Height := StrToInt(params[1]);
+           size := StrToint(params[2]);
+        end else begin
+           for j := 0 to length(params) - 1 do begin
+             if j = length(params) - 1 then
+               value := IntToBin(StrToInt(params[j]), (LifeForm.Width div size) mod DIVIDER)
+             else
+               value := IntToBin(StrToInt(params[j]), DIVIDER);
+             for k := 1 to length(value) do
+               f[i - 1, j * DIVIDER + k - 1] := StrToInt(value[k]);
+           end;
         end;
-        temp := temp + str[i];
       end;
     end;
   end;
