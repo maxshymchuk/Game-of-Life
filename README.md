@@ -17,23 +17,24 @@ The universe of the Game of Life is an infinite, two-dimensional orthogonal grid
 
 The initial pattern constitutes the seed of the system. The first generation is created by applying the above rules simultaneously to every cell in the seed; births and deaths occur simultaneously, and the discrete moment at which this happens is sometimes called a tick. Each generation is a pure function of the preceding one. The rules continue to be applied repeatedly to create further generations.
 
-## Field with random fill example
+## Features
 
-<p align="center">
-  <img width="400" height="400" src="pics/gol2.png">
-</p>
+This desktop application allows you to change game rules at runtime! You can set conditions when cell born or stay, the default setup is Born when 3 around and Stay when 2 or 3 around, otherwise the cell dies. It's possible to change size of the window of the application and of the cells itself. Also, another feature is to disable borders, so cells can interact with cells from opposite side. Enjoy!
 
-## Program features
+## Controls
 
-* Adaptive field size
-* Custom cell size
-* Custom rules B/S
-* Border setting
-* Speed regulator
-* Random field generation
-* Ability to save/open map
-* Ability to draw your own map!
+- Use +/- to increase/decrese render speed
+- `LMB` to draw, `RMB` to remove
+- `MMB` to render 1 generation by click
+- `ESC` to toggle settings
+- `ENTER` to toggle loop
+- `C` to clear whole field
+- `R` to randomize cells on a field
+- `CTRL+S` to save your current field
+- `CTRL+O` to load field from file
 
-<p align="center">
-  <img width="400" height="400" src="pics/gol1.png">
-</p>
+## Screenshots
+
+| Random fill                                        | Drawn smile                                        |
+|----------------------------------------------------|----------------------------------------------------|
+| <img width="400" height="400" src="pics/gol2.png"> | <img width="400" height="400" src="pics/gol1.png"> |
