@@ -37,4 +37,4 @@ This desktop application allows you to change game rules at runtime! You can set
 
 | Random fill                                        | Drawn smile                                        |
 |----------------------------------------------------|----------------------------------------------------|
-| <img width="400" height="400" src="pics/gol2.png"> | <img width="400" height="400" src="pics/gol1.png"> |
+| <img width="400" height="400" src="https://raw.githubusercontent.com/maxshymchuk/Game-of-Life/readme-content/random-fill.png"> | <img width="400" height="400" src="https://raw.githubusercontent.com/maxshymchuk/Game-of-Life/readme-content/example.png"> |
