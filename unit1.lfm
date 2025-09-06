@@ -8,7 +8,6 @@ object LifeForm: TLifeForm
   ClientWidth = 600
   KeyPreview = True
   Position = poScreenCenter
-  LCLVersion = '4.2.0.0'
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
@@ -100,7 +99,6 @@ object LifeForm: TLifeForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
-        Text = '3'
         OnKeyDown = SPanel_Edit_BornEditKeyDown
       end
       object SPanel_Edit_StayLabel: TLabel
@@ -128,7 +126,6 @@ object LifeForm: TLifeForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        Text = '23'
         OnKeyDown = SPanel_Edit_BornEditKeyDown
       end
       object SPanel_Edit_AcceptButton: TButton
@@ -176,7 +173,6 @@ object LifeForm: TLifeForm
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
-        Text = '3'
         OnKeyDown = SPanel_Edit_BornEditKeyDown
       end
       object SPanel_Edit_FieldSizeLabel: TLabel

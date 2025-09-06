@@ -71,6 +71,27 @@ type
 {$R *.lfm}
 {$R-}
 
+function BitsToInt(const Bits: string): QWord;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 1 to Length(Bits) do
+    Result := (Result shl 1) or Ord(Bits[i] = '1');
+end;
+
+function IntToBits(Value: QWord; Width: Integer): string;
+var
+  i: Integer;
+begin
+  SetLength(Result, Width);
+  for i := Width downto 1 do
+  begin
+    Result[i] := Char(Ord('0') + (Value and 1));
+    Value := Value shr 1;
+  end;
+end;
+
 procedure TLifeForm.ShowInfo;
 begin
   LifeForm.Caption := Format(
@@ -246,88 +267,141 @@ begin
 end;
 
 procedure TLifeForm.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-const DIVIDER = 32;
+  const DIVIDER = 32;
+
   procedure SaveMap;
   var
-    i, j, k, steps, trunk: longint;
-    currentBinary: string;
+    y, x, k, steps, trunk: Integer;
+    chunkBits: string;
+    chunkVal: QWord;
   begin
-    if SaveDialog.Execute then begin
-      System.Assign(map, SaveDialog.FileName);
-      System.Rewrite(map);
-      steps := length(f) div DIVIDER;
-      trunk := length(f) mod DIVIDER;
-      write(map, LifeForm.Width, ',', LifeForm.Height, ',', size, ';');
-      for i := 0 to (length(f[0]) - 1) do begin
-        for j := 1 to steps do begin
-          currentBinary := '0';
-          for k := (j - 1) * DIVIDER to j * DIVIDER - 1 do begin
-            currentBinary := currentBinary + IntToStr(f[i, k]);
-          end;
-          write(map, Numb2Dec(currentBinary, 2), ',');
-        end;
-        currentBinary := '0';
-        for j := steps * DIVIDER to steps * DIVIDER + trunk - 1 do begin
-          currentBinary := currentBinary + IntToStr(f[i, j]);
-        end;
-        write(map, Numb2Dec(currentBinary, 2), ';');
+    if not SaveDialog.Execute then Exit;
+
+    System.Assign(map, SaveDialog.FileName);
+    System.Rewrite(map);
+
+    steps := fx div DIVIDER;
+    trunk := fx mod DIVIDER;
+
+    Write(map, LifeForm.Width, ',', LifeForm.Height, ',', size, ';');
+
+    for y := 0 to fy - 1 do
+    begin
+      for k := 0 to steps - 1 do
+      begin
+        chunkBits := '';
+        for x := k * DIVIDER to k * DIVIDER + DIVIDER - 1 do
+          chunkBits := chunkBits + Char(Ord('0') + f[y, x]);
+        chunkVal := BitsToInt(chunkBits);
+        Write(map, chunkVal, ',');
       end;
-      System.Close(map);
+
+      if trunk > 0 then
+      begin
+        chunkBits := '';
+        for x := steps * DIVIDER to fx - 1 do
+          chunkBits := chunkBits + Char(Ord('0') + f[y, x]);
+        chunkVal := BitsToInt(chunkBits);
+        Write(map, chunkVal);
+      end;
+
+      Write(map, ';');
     end;
+
+    System.Close(map);
   end;
+
   procedure OpenMap;
   var
-    i, j, k: longint;
-    str, value: string;
-    mapLines, params: TStringArray;
+    y, i, bitIdx, expectedBits, col, trunk: Integer;
+    line, header: string;
+    lines, params: TStringArray;
+    val: QWord;
+    bits: string;
+    w, h, sz: Integer;
   begin
-    if OpenDialog.Execute then begin
-      System.Assign(map, OpenDialog.FileName);
-      System.Reset(map);
-      readln(map, str);
-      System.Close(map);
-      mapLines := str.Split(';');
-      for i := 0 to length(mapLines) - 1 do begin
-        params := mapLines[i].Split(',');
-        if i = 0 then begin
-           LifeForm.Width := StrToInt(params[0]);
-           LifeForm.Height := StrToInt(params[1]);
-           size := StrToint(params[2]);
-        end else begin
-           for j := 0 to length(params) - 1 do begin
-             if j = length(params) - 1 then
-               value := IntToBin(StrToInt(params[j]), (LifeForm.Width div size) mod DIVIDER)
-             else
-               value := IntToBin(StrToInt(params[j]), DIVIDER);
-             for k := 1 to length(value) do
-               f[i - 1, j * DIVIDER + k - 1] := StrToInt(value[k]);
-           end;
+    if not OpenDialog.Execute then Exit;
+
+    System.Assign(map, OpenDialog.FileName);
+    System.Reset(map);
+    ReadLn(map, line);
+    System.Close(map);
+
+    lines := line.Split(';');
+    if Length(lines) = 0 then Exit;
+
+    header := lines[0];
+    params := header.Split(',');
+    w  := StrToIntDef(params[0], LifeForm.Width);
+    h  := StrToIntDef(params[1], LifeForm.Height);
+    sz := StrToIntDef(params[2], size);
+
+    LifeForm.Width  := w;
+    LifeForm.Height := h;
+    size := sz;
+
+    UpdateField;
+    ClearField;
+
+    trunk := fx mod DIVIDER;
+
+    for y := 0 to fy - 1 do
+    begin
+      if (y + 1) >= Length(lines) then Break;
+      params := lines[y + 1].Split(',');
+      col := 0;
+
+      for i := 0 to High(params) do
+      begin
+        if params[i] = '' then Continue;
+
+        val := StrToQWordDef(params[i], 0);
+        expectedBits := DIVIDER;
+        if (i = High(params)) and (trunk <> 0) then
+          expectedBits := trunk;
+
+        bits := IntToBits(val, expectedBits);
+
+        for bitIdx := 1 to Length(bits) do
+        begin
+          if col >= fx then Break;
+          f[y, col] := Ord(bits[bitIdx] = '1');
+          Inc(col);
         end;
       end;
     end;
+
+    DrawField;
+    ShowInfo;
   end;
+
   procedure Pause;
   begin
     isPlaying := false;
     Timer.Enabled := isPlaying;
   end;
+
   procedure IncSpeed;
   begin
     if Timer.Interval > 20 then Timer.Interval := Timer.Interval - 20;
   end;
+
   procedure DecSpeed;
   begin
     if Timer.Interval < 2000 then Timer.Interval := Timer.Interval + 20;
   end;
+
   procedure PlayPause;
   begin
     isPlaying := not isPlaying;
     Timer.Enabled := isPlaying;
   end;
+
   procedure ToggleSettings;
   begin
     SPanel.Visible := not SPanel.Visible;
   end;
+
 begin
   // Ctrl pressed
   if ssCtrl in Shift then begin
@@ -403,6 +477,10 @@ begin
   config.B := '3';
   config.S := '23';
   size := 3;
+
+  SPanel_Edit_BornEdit.Text := config.B;
+  SPanel_Edit_StayEdit.Text := config.S;
+  SPanel_Edit_SizeEdit.Text := IntToStr(size);
 
   UpdateField;
   ClearField;
