@@ -7,14 +7,16 @@ object LifeForm: TLifeForm
   ClientHeight = 600
   ClientWidth = 600
   KeyPreview = True
+  Position = poScreenCenter
+  LCLVersion = '4.2.0.0'
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
   OnMouseDown = FormMouseDown
   OnMouseMove = FormMouseMove
   OnMouseUp = FormMouseUp
+  OnPaint = FormPaint
   OnResize = FormResize
-  OnShow = FormShow
-  Position = poScreenCenter
-  LCLVersion = '2.0.6.0'
   object SPanel: TPanel
     Left = 0
     Height = 272
@@ -24,6 +26,7 @@ object LifeForm: TLifeForm
     ClientHeight = 272
     ClientWidth = 200
     Color = clBlack
+    ParentBackground = False
     ParentColor = False
     TabOrder = 0
     object SPanel_Text: TPanel
@@ -39,6 +42,7 @@ object LifeForm: TLifeForm
       ClientHeight = 166
       ClientWidth = 180
       Color = clBlack
+      ParentBackground = False
       ParentColor = False
       TabOrder = 0
       object SPanel_Text_Label: TLabel
@@ -68,6 +72,7 @@ object LifeForm: TLifeForm
       ClientHeight = 76
       ClientWidth = 180
       Color = clBlack
+      ParentBackground = False
       ParentColor = False
       TabOrder = 1
       object SPanel_Edit_BornLabel: TLabel
@@ -91,12 +96,12 @@ object LifeForm: TLifeForm
         AutoSelect = False
         Color = clBlack
         Font.Color = clWhite
-        OnKeyDown = SPanel_Edit_BornEditKeyDown
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
         Text = '3'
+        OnKeyDown = SPanel_Edit_BornEditKeyDown
       end
       object SPanel_Edit_StayLabel: TLabel
         Left = 0
@@ -119,12 +124,12 @@ object LifeForm: TLifeForm
         AutoSelect = False
         Color = clBlack
         Font.Color = clWhite
-        OnKeyDown = SPanel_Edit_BornEditKeyDown
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
         Text = '23'
+        OnKeyDown = SPanel_Edit_BornEditKeyDown
       end
       object SPanel_Edit_AcceptButton: TButton
         Left = 100
@@ -132,8 +137,8 @@ object LifeForm: TLifeForm
         Top = 52
         Width = 80
         Caption = 'Accept'
-        OnClick = SPanel_Edit_ClickActions
         TabOrder = 2
+        OnClick = SPanel_Edit_ClickActions
       end
       object SPanel_Edit_BorderToggle: TToggleBox
         Left = 100
@@ -142,9 +147,9 @@ object LifeForm: TLifeForm
         Width = 80
         Caption = 'Border'
         Checked = True
-        OnClick = SPanel_Edit_ClickActions
         State = cbChecked
         TabOrder = 3
+        OnClick = SPanel_Edit_ClickActions
       end
       object SPanel_Edit_SizeLabel: TLabel
         Left = 0
@@ -167,12 +172,12 @@ object LifeForm: TLifeForm
         AutoSelect = False
         Color = clBlack
         Font.Color = clWhite
-        OnKeyDown = SPanel_Edit_BornEditKeyDown
         ParentFont = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
         Text = '3'
+        OnKeyDown = SPanel_Edit_BornEditKeyDown
       end
       object SPanel_Edit_FieldSizeLabel: TLabel
         Left = 100
@@ -191,22 +196,22 @@ object LifeForm: TLifeForm
     Enabled = False
     Interval = 520
     OnTimer = TimerTimer
-    left = 464
-    top = 8
+    Left = 464
+    Top = 8
   end
   object OpenDialog: TOpenDialog
     Title = 'Загрузить карту'
     DefaultExt = '.life'
     Filter = '*.life files|*.life'
-    left = 296
-    top = 8
+    Left = 296
+    Top = 8
   end
   object SaveDialog: TSaveDialog
     Title = 'Сохранить карту'
     DefaultExt = '.life'
     FileName = 'map.life'
     Filter = '*.life files|*.life'
-    left = 384
-    top = 8
+    Left = 384
+    Top = 8
   end
 end

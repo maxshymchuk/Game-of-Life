@@ -5,7 +5,7 @@ unit Unit1;
 interface
 
 uses
-  Forms, Graphics, ExtCtrls, Messages, Classes, SysUtils, Controls, StdCtrls, Dialogs, Strutils;
+  Forms, Graphics, ExtCtrls, Messages, Classes, SysUtils, Controls, StdCtrls, Dialogs, Strutils, LCLType;
 
 type
 
@@ -28,6 +28,9 @@ type
     SPanel_Edit: TPanel;
     SaveDialog: TSaveDialog;
     Timer: TTimer;
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormPaint(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure SPanel_Edit_ClickActions(Sender: TObject);
     procedure SPanel_Edit_BornEditKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -35,15 +38,14 @@ type
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure FormShow(Sender: TObject);
     procedure TimerTimer(Sender: TObject);
   private
     procedure WMEraseBkgnd(var Message: TWmEraseBkgnd); message WM_ERASEBKGND;
   public
-    procedure mouseDraw(X, Y: longint);
-    procedure showInfo;
-    procedure drawField;
-    procedure updateField;
+    procedure MouseDraw(X, Y: longint);
+    procedure ShowInfo;
+    procedure DrawField;
+    procedure UpdateField;
   end;
 
 type
@@ -55,86 +57,112 @@ type
 var
   LifeForm: TLifeForm;
   DrawBuffer: TBitMap;
-  f: array of array of byte;
-  fx, fy, step, size: longint;
+  f, f2: array of array of byte;
+  fx, fy, size: longint;
   isPlaying, isDrawing, isLeftButton, isBordered: boolean;
   config: TConfig;
   map: text;
 
 implementation
+type
+  TNeighbor = 0..8;
+  TNeighborSet = set of TNeighbor;
 
 {$R *.lfm}
 {$R-}
 
-procedure TLifeForm.showInfo;
+procedure TLifeForm.ShowInfo;
 begin
-  LifeForm.Caption := '[B' + config.B + '/S' + config.S + '] Life The Game :: Gen ' + IntToStr(step) + ' :: Speed ' + IntToStr(2020 - Timer.Interval);
-  if isBordered then
-    LifeForm.Caption := LifeForm.Caption + ' :: Bordered'
-  else LifeForm.Caption := LifeForm.Caption + ' :: Looped';
+  LifeForm.Caption := Format(
+    'Game of Life :: [B%s/S%s] :: %d ms/step :: %s',
+    [config.B, config.S, Timer.Interval, IfThen(isBordered, 'Bordered', 'Looped')]
+  );
 end;
 
-procedure operate;
+procedure Operate;
 var
-  i, j: word;
-var
-  temp: array of array of byte;
-  function CheckNeighbors(y, x: longint): string;
-  var
-    i, j, n: longint;
-    function CheckCoord(n: longint; t: byte): longint;
-    begin
-      if t = 0 then begin
-        if n < 0 then n := fy - 1;
-        if n > fy - 1 then n := 0;
-      end else begin
-        if n < 0 then n := fx - 1;
-        if n > fx - 1 then n := 0;
-      end;
-      Result := n;
-    end;
+  x, y, n: Integer;
+  BSet, SSet: TNeighborSet;
+  tmp: array of array of Byte;
+
+  function MakeSet(const S: string): TNeighborSet;
+  var i: Integer; ch: Char; d: TNeighbor;
   begin
-    n := 0;
-    for i := y - 1 to y + 1 do
-      for j := x - 1 to x + 1 do
-        if isBordered then begin
-          if (i >= 0) and (i < fy) and (j >= 0) and (j < fx) then if f[i, j] = 1 then n := n + 1;
-        end else begin
-          if f[CheckCoord(i, 0), CheckCoord(j, 1)] = 1 then n := n + 1;
-        end;
-    if (f[y, x] = 1) and (n > 0) then n := n - 1;
-    Result := IntToStr(n);
-  end;
-begin
-  SetLength(temp, fy, fx);
-  for i := 0 to fy - 1 do
-    for j := 0 to fx - 1 do begin
-      if Pos(CheckNeighbors(i, j), config.S) <> 0 then temp[i, j] := f[i, j];
-      if Pos(CheckNeighbors(i, j), config.B) <> 0 then temp[i, j] := 1;
+    Result := [];
+    for i := 1 to Length(S) do
+    begin
+      ch := S[i];
+      if (ch >= '0') and (ch <= '8') then
+      begin
+        d := TNeighbor(Ord(ch) - Ord('0'));
+        Include(Result, d);
+      end;
     end;
-  f := temp;
-  step := step + 1;
+  end;
+
+  function CountNeighbors(const yy, xx: Integer): Integer;
+  var i, j, ny, nx: Integer;
+  begin
+    Result := 0;
+    for i := yy - 1 to yy + 1 do
+      for j := xx - 1 to xx + 1 do
+      begin
+        if (i = yy) and (j = xx) then Continue;
+        if isBordered then
+        begin
+          if (i >= 0) and (i < fy) and (j >= 0) and (j < fx) then
+            Inc(Result, f[i, j]);
+        end
+        else
+        begin
+          ny := (i + fy) mod fy;
+          nx := (j + fx) mod fx;
+          Inc(Result, f[ny, nx]);
+        end;
+      end;
+  end;
+
+begin
+  BSet := MakeSet(config.B);
+  SSet := MakeSet(config.S);
+
+  for y := 0 to fy - 1 do
+    for x := 0 to fx - 1 do
+    begin
+      n := CountNeighbors(y, x);
+      if f[y, x] = 1 then
+        f2[y, x] := Ord(TNeighbor(n) in SSet)
+      else
+        f2[y, x] := Ord(TNeighbor(n) in BSet);
+    end;
+
+  tmp := f;
+  f := f2;
+  f2 := tmp;
 end;
 
 procedure TLifeForm.TimerTimer(Sender: TObject);
 begin
-  operate;
-  drawField;
-  showInfo;
+  Operate;
+  DrawField;
+  ShowInfo;
 end;
 
-procedure TLifeForm.updateField;
+procedure TLifeForm.UpdateField;
 begin
   DrawBuffer.Width := LifeForm.Width;
   DrawBuffer.Height := LifeForm.Height;
   fx := trunc(LifeForm.Width / size);
   fy := trunc(LifeForm.Height / size);
   SetLength(f, fy, fx);
-  SPanel_Edit_FieldSizeLabel.Caption :=
-    '[' + IntToStr(LifeForm.Width) + ',' + IntToStr(LifeForm.Height) + ']';
+  SetLength(f2, fy, fx);
+  SPanel_Edit_FieldSizeLabel.Caption := Format(
+    '[%s, %s]',
+    [IntToStr(LifeForm.Width), IntToStr(LifeForm.Height)]
+  );
 end;
 
-procedure TLifeForm.drawField;
+procedure TLifeForm.DrawField;
 var
   i, j: word;
 begin
@@ -147,40 +175,26 @@ begin
   Canvas.Draw(0, 0, DrawBuffer);
 end;
 
-procedure clearField;
+procedure ClearField;
 var
   i, j: word;
 begin
-  step := 0;
   for i := 0 to fy - 1 do
-    for j := 0 to fx - 1 do
+    for j := 0 to fx - 1 do begin
       f[i, j] := 0;
+      f2[i, j] := 0;
+    end;
 end;
 
-procedure randomField;
+procedure RandomFill;
 var
   i, j: word;
 begin
-  step := 0;
   for i := 0 to fy - 1 do
-    for j := 0 to fx - 1 do
-      f[i, j] := random(2);
-end;
-
-procedure TLifeForm.FormShow(Sender: TObject);
-begin
-  isPlaying := false;
-  isDrawing := false;
-  isBordered := true;
-  Timer.Enabled := false;
-  DrawBuffer := TBitMap.Create;
-  Randomize;
-  config.B := '3';
-  config.S := '23';
-  size := 3;
-  updateField;
-  clearField;
-  ShowInfo;
+    for j := 0 to fx - 1 do begin
+      f[i, j] := Random(2);
+      f2[i, j] := 0;
+    end;
 end;
 
 procedure TLifeForm.MouseDraw(X, Y: longint);
@@ -214,11 +228,11 @@ begin
   case Button of
     mbLeft: isLeftButton := true; // MLB - DRAW
     mbRight: isLeftButton := false; // MRB - ERASE
-    mbMiddle: begin isDrawing := false; operate; end; // MMB - ONE STEP
+    mbMiddle: begin isDrawing := false; Operate; end; // MMB - ONE STEP
   end;
   if isDrawing then MouseDraw(X, Y);
-  drawField;
-  showInfo;
+  DrawField;
+  ShowInfo;
 end;
 
 procedure TLifeForm.FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
@@ -297,41 +311,108 @@ const DIVIDER = 32;
     isPlaying := false;
     Timer.Enabled := isPlaying;
   end;
+  procedure IncSpeed;
+  begin
+    if Timer.Interval > 20 then Timer.Interval := Timer.Interval - 20;
+  end;
+  procedure DecSpeed;
+  begin
+    if Timer.Interval < 2000 then Timer.Interval := Timer.Interval + 20;
+  end;
+  procedure PlayPause;
+  begin
+    isPlaying := not isPlaying;
+    Timer.Enabled := isPlaying;
+  end;
+  procedure ToggleSettings;
+  begin
+    SPanel.Visible := not SPanel.Visible;
+  end;
 begin
+  // Ctrl pressed
   if ssCtrl in Shift then begin
     case Key of
-      $53: begin Pause; SaveMap; end; // S - SAVE MAP
-      $4F: begin Pause; OpenMap; end; // O - OPEN MAP
+      VK_S: begin Pause; SaveMap; end;
+      VK_O: begin Pause; OpenMap; end;
+    end;
+  // Shift pressed
+  end else if ssShift in Shift then begin
+    case Key of
+      VK_OEM_PLUS: IncSpeed;
+      VK_OEM_MINUS: DecSpeed;
     end;
   end else case Key of
-    $6B: if Timer.Interval > 20 then Timer.Interval := Timer.Interval - 20; // + - INC SPEED
-    $6D: if Timer.Interval < 2000 then Timer.Interval := Timer.Interval + 20; // - - DEC SPEED
-    $0D: isPlaying := not isPlaying; // ENTER - PLAY/PAUSE
-    $43: clearField; // C - CLEAR FIELD
-    $52: randomField; // R - RANDOM FIELD
-    $1B: SPanel.Visible := not SPanel.Visible; // ESC - SHOW/HIDE SETTINGS
+    VK_ADD: IncSpeed;
+    VK_SUBTRACT: DecSpeed;
+    VK_RETURN: PlayPause;
+    VK_C: ClearField;
+    VK_R: RandomFill;
+    VK_ESCAPE: ToggleSettings;
   end;
-  Timer.Enabled := isPlaying;
-  drawField;
-  showInfo;
+  DrawField;
+  ShowInfo;
 end;
 
 procedure TLifeForm.SPanel_Edit_ClickActions(Sender: TObject);
+var
+  newSize: Integer;
 begin
   if Sender = SPanel_Edit_AcceptButton then begin
     config.B := SPanel_Edit_BornEdit.Text;
     config.S := SPanel_Edit_StayEdit.Text;
-    if SPanel_Edit_SizeEdit.Text < '1' then SPanel_Edit_SizeEdit.Text := '1';
-    size := StrToInt(SPanel_Edit_SizeEdit.Text);
-    updateField;
+
+    newSize := StrToIntDef(SPanel_Edit_SizeEdit.Text, size);
+    if newSize < 1 then newSize := 1;
+    if newSize > 100 then newSize := 100;
+    size := newSize;
+    SPanel_Edit_SizeEdit.Text := IntToStr(size);
+
+    UpdateField;
+  end else if Sender = SPanel_Edit_BorderToggle then begin
+    isBordered := SPanel_Edit_BorderToggle.Checked;
   end;
-  if Sender = SPanel_Edit_BorderToggle then isBordered := SPanel_Edit_BorderToggle.Checked;
-  showInfo;
+  ShowInfo;
 end;
 
 procedure TLifeForm.FormResize(Sender: TObject);
 begin
-  if (DrawBuffer <> nil) and (size <> 0) then updateField;
+  if (DrawBuffer <> nil) and (size <> 0) then begin
+    UpdateField;
+    DrawField;
+  end;
+end;
+
+procedure TLifeForm.FormDestroy(Sender: TObject);
+begin
+  DrawBuffer.Free;
+end;
+
+procedure TLifeForm.FormCreate(Sender: TObject);
+begin
+  KeyPreview := True;
+  DoubleBuffered := True;
+
+  isPlaying := false;
+  isDrawing := false;
+  isBordered := true;
+
+  Timer.Enabled := false;
+
+  DrawBuffer := TBitMap.Create;
+  Randomize;
+  config.B := '3';
+  config.S := '23';
+  size := 3;
+
+  UpdateField;
+  ClearField;
+  DrawField;
+  ShowInfo;
+end;
+
+procedure TLifeForm.FormPaint(Sender: TObject);
+begin
+  Canvas.Draw(0, 0, DrawBuffer);
 end;
 
 procedure TLifeForm.SPanel_Edit_BornEditKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
